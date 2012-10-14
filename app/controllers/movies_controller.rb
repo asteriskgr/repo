@@ -8,16 +8,50 @@ class MoviesController < ApplicationController
 
  
 def index
-   @all_ratings = ['G','PG','PG-13','R','NC-17']
-  sort = params[:sort]
-  @short = sort
-  order = params[:order] 
-   @movies = Movie.all
   
-   if sort != nil
-       @movies = Movie.order(sort + ' ' + order)
+   @all_ratings = Movie.ratings
+
+   commit = params[:commit]
+   if commit then
+      @sort = params.fetch(:sort, {})
+      @selected_ratings = params.fetch(:ratings, {})
+      session[:selected_ratings] = @selected_ratings
+   else
+      @sort = params[:sort] || session[:sort]                        
+      @selected_ratings = params[:ratings]
+      if !@selected_ratings then
+         sess_selected_ratings = session.fetch(:selected_ratings, nil)
+          if sess_selected_ratings then
+            redirect = true
+            @selected_ratings = sess_selected_ratings
+          else
+            @selected_ratings = {}
+          end
+      else
+        session[:selected_ratings] = @selected_ratings
+      end
    end
 
+   if session[:sort] != @sort then
+      redirect = true
+      session[:sort] = @sort
+   end
+   if redirect then
+      redirect_to movies_path(:sort => @sort, :ratings => @selected_ratings)
+   return
+   end
+
+   @movies = Movie
+
+  if @sort then
+     @movies = @movies.order(@sort)
+  end
+
+  if @selected_ratings.empty? then
+      @movies = @movies.all
+  else
+      @movies = @movies.where("rating in (?)", @selected_ratings.keys)
+  end
 end
 
   
