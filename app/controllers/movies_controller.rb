@@ -11,47 +11,38 @@ def index
   
    @all_ratings = Movie.ratings
 
-   commit = params[:commit]
-   if commit then
-      @sort = params.fetch(:sort, {})
-      @selected_ratings = params.fetch(:ratings, {})
-      session[:selected_ratings] = @selected_ratings
-   else
-      @sort = params[:sort] || session[:sort]                        
-      @selected_ratings = params[:ratings]
-      if !@selected_ratings then
-         sess_selected_ratings = session.fetch(:selected_ratings, nil)
-          if sess_selected_ratings then
-            redirect = true
-            @selected_ratings = sess_selected_ratings
-          else
-            @selected_ratings = {}
-          end
+    @checked_ratings = params[:ratings] if params.has_key? 'ratings'
+    @ordered_by = params[:order_by] if params.has_key? 'order_by'
+
+    # session.clear where user submit empty rating filters
+    if params.has_key? 'utf8'
+      session.delete :checked_ratings
+      session.delete :ordered_by
+    end
+
+    # update session from incoming params
+    session[:checked_ratings] = @checked_ratings if @checked_ratings
+    session[:ordered_by] = @ordered_by if @ordered_by
+
+    if !@checked_ratings && !@ordered_by && session[:checked_ratings]
+      @checked_ratings = session[:checked_ratings] unless @checked_ratings
+      @ordered_by = session[:ordered_by] unless @ordered_by
+
+      flash.keep
+      redirect_to movies_path({order_by: @ordered_by, ratings: @checked_ratings})
+    end
+
+    if @checked_ratings
+      if @ordered_by
+        @movies = Movie.find_all_by_rating(@checked_ratings, :order => "#{@ordered_by} asc")
       else
-        session[:selected_ratings] = @selected_ratings
+        @movies = Movie.find_all_by_rating(@checked_ratings)
       end
-   end
-
-   if session[:sort] != @sort then
-      redirect = true
-      session[:sort] = @sort
-   end
-   if redirect then
-      redirect_to movies_path(:sort => @sort, :ratings => @selected_ratings)
-   return
-   end
-
-   @movies = Movie
-
-  if @sort then
-     @movies = @movies.order(@sort)
-  end
-
-  if @selected_ratings.empty? then
-      @movies = @movies.all
-  else
-      @movies = @movies.where("rating in (?)", @selected_ratings.keys)
-  end
+    elsif @ordered_by
+      @movies = Movie.all(:order => "#{@ordered_by} asc")
+    else
+      @movies = Movie.all
+    end
 end
 
   
