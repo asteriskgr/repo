@@ -6,7 +6,7 @@
   - @all_ratings.each do |rating|
     = rating
     %input{type: 'checkbox', name: "ratings[]", id: "ratings_#{rating}", value: "#{rating}", checked: is_selected?(rating)}
-  %input#ratings_submit{type: 'submit',id:"ratings_submit", value: 'Refresh'}
+  %input#ratings_submit{type: 'submit',id: "ratings_submit", value: 'Refresh'}
   
 %table#movies
   %thead
